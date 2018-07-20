@@ -1,6 +1,6 @@
 {
   "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
-  "name": "pid-8286eaf5-74c6-4ddc-85cb-51f67af6a795"
+  "name": "pid-8286eaf5-74c6-4ddc-85cb-51f67af6a795",
   "contentVersion": "1.0.0.0",
   "parameters": {
     "baseResourceName": {
