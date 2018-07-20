@@ -1,5 +1,5 @@
 # Solution Overview
-For more information about this solution, see [Azure Security and Compliance Blueprint - UK-OFFICAL Three-Tier Web Applications using Platform as a Service](https://aka.ms/ukofficialpaas).
+For more information about this solution, see [Azure Security and Compliance Blueprint - UK-OFFICAL Three-Tier Web Applications using Platform as a Service](https://aka.ms/ukofficial-paaswa).
 
 For deployment this blueprint uses linked ARM Templates.  There are a series of individual templates for each component that can be used to deploy each component indivudually, each of these templates have their own series of paramters and defaults.  In the root folder we have azuredeploy.json, this exposes a subset of parameters which has been derived to enable a simple deployment.  More advanced configurations can be achived via customising the templates.
 
@@ -45,7 +45,7 @@ The ```pre_reqs.sh``` script supports a number of command line arguments that al
 ## Method 2: Azure Portal Deployment Process
 
 A deployment for this reference architecture is available on
-[GitHub](https://aka.ms/ukofficialpaasrepo). The templates can be cloned or downloaded if customisation of parameters is requried.  To deploy the architecture, follow the steps below.
+[GitHub](https://aka.ms/ukofficial-paaswa-repo). The templates can be cloned or downloaded if customisation of parameters is requried.  To deploy the architecture, follow the steps below.
 
 <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2Fuk-official-three-tier-paas-webapp%2Fmaster%2Fazuredeploy.json" target="_blank">
 <img src="https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/deploytoazure.png"/>
