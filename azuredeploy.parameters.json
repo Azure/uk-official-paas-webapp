@@ -1,0 +1,15 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "AADAdminLogin": {
+        "value": "<YOUR LOGIN NAME>"
+    },
+    "AADAdminObjectID": {
+        "value": "<VALID GROUP ID>"
+    },
+    "AlertSendToEmailAddress": {
+        "value": "<YOUR EMAIL ADDRESS>"
+    }
+  }
+}

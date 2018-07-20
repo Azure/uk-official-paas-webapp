@@ -1,0 +1,304 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "baseResourceName": {
+            "type": "string",
+            "metadata": {
+              "description": "Base name to ensure unique names where required for deployments"
+            },
+            "maxLength": 15,
+            "defaultValue": "[uniqueString(resourceGroup().id)]"
+          },
+        "appServicePlanName": {
+            "type": "string",
+            "metadata": {
+                "description": "Name of the App Service Plan to deploy"
+            },
+            "defaultValue": "[concat('asp','-',parameters('baseResourceName'))]"    
+        },
+        "appServiceKind": {
+            "type": "string",
+            "allowedValues": [
+                "app",
+                "api"
+            ]
+        },
+        "appName": {
+            "type": "string",
+            "metadata": {
+                "description": "The name of the app to deploy"
+            }
+        },
+        "appSlotsToDeploy": {
+            "type": "array",
+            "metadata": {
+                "description": "Array of slots to deploy for apps within the service plan"
+              },
+              "defaultValue": [
+                "Dev",
+                "QA",
+                "UAT",
+                "Preview"
+              ] 
+        },
+        "minTLSVersionSupported": {
+            "type": "string",
+            "metadata": {
+                "description": "The minimum TLS version required for SSL requests"
+            },
+            "allowedValues": [
+                "1.0",
+                "1.1",
+                "1.2"
+            ],
+            "defaultValue": "1.2"
+        },
+        "allowedIPAddresses": {
+            "type": "array",
+            "metadata": {
+                "description": "An array of IP Address restriction objects in the form {'ipAddress':'<IP Address>','subnetMask':'<Subnet Mask>'"
+            }
+        },
+        "workspaceId": {
+            "type": "string",
+            "metadata": {
+                "description": "Log Analytics workspace Id to log to, if not supplied no integration will be configured."
+            },
+            "defaultValue": null
+        },
+        "storageAccountId": {
+            "type": "string",
+            "metadata": {
+                "description": "Storage Account Id to log to, if not supplied no integration will be configured."
+            },
+            "defaultValue": null
+        },
+        "connectionString": {
+            "type": "string",
+            "metadata": {
+                "description": "SQL Server Connection string for the Website"
+            },
+            "defaultValue": "ignore"
+        }
+    },
+    "variables": {
+        "standardPlanMaxAdditionalSlots": 4
+    },
+    "resources": [
+        {
+            "apiVersion": "2015-05-01",
+            "name": "[concat('ai-', parameters('appName'))]",
+            "type": "Microsoft.Insights/components",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[parameters('appName')]"
+            ],
+            "tags": {
+                "[concat('hidden-link:', resourceGroup().id, '/providers/Microsoft.Web/sites/', parameters('appName'))]": "Resource",
+                "displayName": "AppInsightsComponent"
+            },
+            "kind": "web",
+            "properties": {
+                "ApplicationId": "[parameters('appName')]",
+                "Application_Type": "web"
+            }
+        },
+        {
+            "apiVersion": "2017-08-01",
+            "type": "Microsoft.Web/serverfarms",
+            "name": "[parameters('appServicePlanName')]",
+            "location": "[resourceGroup().location]",
+            "comments": "This app service plan is used for the web app and slots.",
+            "tags": {
+            },
+            "properties": {},
+            "dependsOn": [],
+            "sku": {
+              "name": "[if(lessOrEquals(length(parameters('appSlotsToDeploy')), variables('standardPlanMaxAdditionalSlots')), 'S1', 'P1')]"
+            }
+        },
+        {
+            "apiVersion": "2016-08-01",
+            "type": "Microsoft.Web/sites",
+            "kind": "[parameters('appServiceKind')]",
+            "name": "[parameters('appName')]",
+            "location": "[resourceGroup().location]",
+            "comments": "This is the web app, also the default 'nameless' slot.",
+            "tags": {
+                "[concat('hidden-related:', resourceId('Microsoft.Web/serverfarms', parameters('appServicePlanName')))]": "empty"
+            },
+            "identity": {
+                "type": "SystemAssigned"
+            },
+            "properties": {
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('appServicePlanName'))]",
+                "siteConfig":{
+                    "ipSecurityRestrictions": {
+                        "copy": [
+                            {
+                                "name": "deployIPAddressRestrictions",
+                                "count": "[length(parameters('allowedIPAddresses'))]",
+                                "input": {
+                                    "ipAddress": "[if(empty(parameters('allowedIPAddresses')[copyIndex('deployIPAddressRestrictions')]),json('null'),parameters('allowedIPAddresses')[copyIndex('deployIPAddressRestrictions')].ipAddress)]",
+                                    "subnetMask": "[if(empty(parameters('allowedIPAddresses')[copyIndex('deployIPAddressRestrictions')]), json('null'), parameters('allowedIPAddresses')[copyIndex('deployIPAddressRestrictions')].subnetMask)]"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "httpsOnly" : true,
+                "minTLSVersionSupported": "[parameters('minTLSVersionSupported')]"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/serverfarms', parameters('appServicePlanName'))]"
+            ],
+            "resources": [
+                {
+                    "condition": "[not(equals(parameters('connectionString'),'ignore'))]",
+                    "name": "connectionstrings",
+                    "type": "config",
+                    "apiVersion": "2014-11-01",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Web/sites/', parameters('appName'))]"
+                    ],
+                    "properties": {
+                        "DefaultConnectionString": { 
+                            "value": "[parameters('connectionString')]",
+                            "type": "SQLAzure" 
+                        }
+                    }
+                },
+                {
+                    "apiVersion": "2015-08-01",
+                    "name": "appsettings",
+                    "type": "config",
+                    "dependsOn": [
+                      "[parameters('appName')]",
+                      "[concat('ai-', parameters('appName'))]"
+                    ],
+                    "properties": {
+                      "applicationInsightsInstrumentationKey": "[reference(resourceId('Microsoft.Insights/components', concat('ai-', parameters('appName'))), '2014-04-01').InstrumentationKey]"
+                    }
+                  },
+                {
+                    "apiVersion": "2015-08-01",
+                    "name": "logs",
+                    "type": "config",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Web/Sites', parameters('appName'))]"
+                      ],
+                    "properties": {
+                        "applicationLogs": {
+                        "fileSystem": {
+                            "level": "Warning"
+                            }
+                        },
+                        "httpLogs": {
+                        "fileSystem": {
+                            "retentionInMb": 40,
+                            "enabled": true
+                            }
+                        },
+                        "failedRequestsTracing": {
+                        "enabled": true
+                        },
+                        "detailedErrorMessages": {
+                        "enabled": false
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "apiVersion": "2016-08-01",
+            "type": "Microsoft.Web/sites/slots",
+            "name": "[concat(parameters('appName'), '/', parameters('appSlotsToDeploy')[copyIndex('deployWebAppSlots')])]",
+            "kind": "[parameters('appServiceKind')]",
+            "location": "[resourceGroup().location]",
+            "comments": "This specifies the web app slots.",
+            "tags": {
+              "Environment": "parameters('appSlotsToDeploy')[copyIndex()]"
+            },
+            "properties": {
+              "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('appServicePlanName'))]"
+            },
+            "dependsOn": [
+              "[resourceId('Microsoft.Web/Sites', parameters('appName'))]"
+            ],
+            "copy": {
+              "name": "deployWebAppSlots",
+              "count": "[length(parameters('appSlotsToDeploy'))]"
+            }
+        },
+        {
+            "condition": "[not(equals(parameters('workspaceId'), json('null')))]",
+            "type": "Microsoft.Insights/components/providers/diagnosticSettings",
+            "name": "[concat('ai-', parameters('appName'),'/Microsoft.Insights/LogAnalyticsIntegrationCustomer')]",
+            "apiVersion": "2017-05-01-preview",
+            "dependsOn": [
+                "[concat('Microsoft.Insights/components/','ai-', parameters('appName'))]"
+            ],
+            "properties": {
+                "name": "[concat('LogAnalyticsIntegration-', parameters('appName'))]",
+                "workspaceId": "[parameters('workspaceId')]"
+            }
+        },
+        {  
+            "condition": "[not(equals(parameters('workspaceId'), json('null')))]",
+            "type":"Microsoft.Web/serverfarms/providers/diagnosticsettings",
+            "name":"[concat(parameters('appServicePlanName'),'/Microsoft.Insights/service')]",
+            "apiVersion":"2016-09-01",
+            "location":"[resourceGroup().location]",
+            "dependsOn":[  
+                "[parameters('appServicePlanName')]"
+            ],
+            "properties":{  
+              "workspaceId": "[parameters('workspaceId')]",
+              "metrics":[  
+                {  
+                    "category":"AllMetrics",
+                    "enabled":true,
+                    "retentionPolicy":{  
+                        "enabled":true,
+                        "days": 7
+                    }
+                }
+              ]
+            }
+          },
+          {  
+            "type":"Microsoft.Web/sites/providers/diagnosticsettings",
+            "name":"[concat(parameters('appName'), '/Microsoft.Insights/service')]",
+            "apiVersion":"2016-09-01",
+            "location":"[resourceGroup().location]",
+            "dependsOn":[  
+              "[parameters('appName')]"
+            ],
+            "properties":{  
+              "workspaceId": "[parameters('workspaceId')]",
+              "storageAccountId": "[parameters('storageAccountId')]",
+              "metrics":[  
+                {  
+                    "category":"AllMetrics",
+                    "enabled":true,
+                    "retentionPolicy": {  
+                        "enabled": true,
+                        "days": 7
+                    }
+                }
+              ]
+            }
+          }
+    ],
+    "outputs": {
+        "appServiceMSITenantId": {
+            "type": "string",
+            "value": "[reference(concat('Microsoft.Web/sites/', parameters('appName')), '2016-08-01', 'Full').identity.tenantId]"
+        },
+        "appServiceMSIObjectId": {
+            "type": "string",
+            "value": "[reference(concat('Microsoft.Web/sites/', parameters('appName')), '2016-08-01', 'Full').identity.principalId]"
+        }
+    }
+}

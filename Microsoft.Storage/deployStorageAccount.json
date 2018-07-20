@@ -1,0 +1,121 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "storageAccountName": {
+        "type": "string",
+        "metadata": {
+            "description": "Name of the storage account, must be globally unique all lower case"
+        },
+        "defaultValue": "[uniqueString(resourceGroup().id)]"
+    },
+    "UseBYOK": {
+        "type": "string",
+        "allowedValues": [
+            "Yes",
+            "No"
+        ],
+        "metadata": {
+            "description": "If set storage account will be encrypted using BYOK"
+        },
+        "defaultValue": "No"
+    },
+    "keyVaultUri": {
+        "type": "string",
+        "metadata": {
+            "description": "Uri of the Key Vault containing the BYOK certificate, required if 'UseBYOK' is set, ignored otherwise"
+        },
+        "defaultValue": "ignore"
+    },
+    "KeyName": {
+        "type": "string",
+        "metadata": {
+            "description": "The name of the Key"
+          },
+          "defaultValue": "ignore" 
+    },
+    "KeyVersion": {
+        "type": "string",
+        "metadata": {
+            "description": "The version of the Key"
+          },
+          "defaultValue": "ignore" 
+    }
+  },
+  "variables": {
+      "lowerStorageAccountName": "[toLower(parameters('storageAccountName'))]"
+  },
+  "resources": [
+    {
+        "type": "Microsoft.Storage/storageAccounts",
+        "name": "[variables('lowerStorageAccountName')]",
+        "apiVersion": "2017-10-01",
+        "location": "[resourceGroup().location]",
+        "comments": "",
+        "sku": {
+          "name": "Standard_LRS"
+        },
+        "kind": "StorageV2",
+        "properties": {
+          "encryption": {
+            "keySource": "Microsoft.Storage",
+            "services": {
+              "blob": {
+                "enabled": true
+              },
+              "file": {
+                  "enabled": true
+              }
+            }
+          },
+          "supportsHttpsTrafficOnly": true
+        },
+        "identity": {
+            "type": "SystemAssigned"
+        }
+    },
+    {
+        "condition": "[equals(parameters('UseBYOK'), 'Yes')]",
+        "apiVersion": "2015-01-01",
+        "type": "Microsoft.Resources/deployments",
+        "name": "applyBYOK",
+        "dependsOn": [
+            "[variables('lowerStorageAccountName')]"
+        ],
+        "properties": {
+           "mode": "Incremental",
+           "parameters": {},
+           "template": {
+                "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+                "contentVersion": "1.0.0.0",
+                "parameters": {},
+                "variables": {},
+                "resources": [
+                    {
+                        "type": "Microsoft.Storage/storageAccounts",
+                        "name": "[variables('lowerStorageAccountName')]",
+                        "apiVersion": "2017-10-01",
+                        "location": "[resourceGroup().location]",
+                        "properties": {
+                            "encryption": {
+                                "keySource": "[if(equals(parameters('UseBYOK'), 'No'), 'Microsoft.Storage', 'Microsoft.Keyvault')]",
+                                "keyvaultproperties": {
+                                    "keyname": "[if(equals(parameters('UseBYOK'), 'No'), json('null'), parameters('KeyName'))]",
+                                    "keyversion": "[if(equals(parameters('UseBYOK'), 'No'), json('null'), parameters('KeyVersion'))]",
+                                    "keyvaulturi": "[if(equals(parameters('UseBYOK'), 'No'), json('null'), parameters('keyVaultUri'))]"
+                                }
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+    }
+  ],
+  "outputs": {
+      "storageAccountId": {
+        "type": "string",
+        "value": "[resourceId('Microsoft.Storage/storageAccounts',variables('lowerStorageAccountName'))]"
+      }
+  }
+}

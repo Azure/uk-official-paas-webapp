@@ -1,0 +1,233 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "workspaceName": {
+        "type": "string",
+        "metadata": {
+          "description": "Name of the resource"
+        },
+        "maxLength": 15,
+        "defaultValue": "[uniqueString(resourceGroup().id)]"
+      },
+      "LogsRetentionInDays": {
+        "type": "int",
+        "defaultValue": 7,
+        "metadata": {
+          "description": "Number of days to retain logs"
+        }
+      },
+      "LogsWorkspaceLocation": {
+        "type": "string",
+        "allowedValues": [
+          "eastus",
+          "westeurope",
+          "southeastasia",
+          "australiasoutheast",
+          "westcentralus",
+          "japaneast",
+          "uksouth",
+          "centralindia",
+          "canadacentral"
+        ],
+        "defaultValue": "westeurope",
+        "metadata": {
+          "description": "The Azure region the Logs Workspace will be deployed to"
+        }
+      },
+      "logAnalyticsSKU": {
+        "type": "string",
+        "defaultValue": "Free",
+        "allowedValues": [
+          "Free",
+          "pergb2018"
+        ],
+        "metadata": {
+          "description": "The pricing tier of the Log Analytics workspace.  New workspaces should be ok 'pergb2018', some subscritpions may require 'Free' please see http://aka.ms/PricingTierWarning"
+        }
+      },
+        "AuditRetentionPeriodInDays": {
+          "type": "int",
+          "defaultValue": 7
+        }
+    },
+    "variables": {
+      "SQLAssessment": {
+        "Name": "[Concat('SQLAssessment', '(', parameters('workspaceName'), ')')]",
+        "GalleryName": "SQLAssessment"
+      },
+      "ApplicationInsights": {
+        "Name": "[Concat('ApplicationInsights', '(', parameters('workspaceName'), ')')]",
+        "GalleryName": "ApplicationInsights"
+      },
+      "KeyVaultAnalytics": {
+        "Name": "[Concat('KeyVaultAnalytics', '(', parameters('workspaceName'), ')')]",
+        "GalleryName": "KeyVaultAnalytics"
+      },
+      "AzureSQLAnalytics": {
+        "Name": "[Concat('AzureSQLAnalytics', '(', parameters('workspaceName'), ')')]",
+        "GalleryName": "AzureSQLAnalytics"
+      },
+      "AzureActivity": {
+        "Name": "[Concat('AzureActivity', '(', parameters('workspaceName'), ')')]",
+        "GalleryName": "AzureActivity"
+      },
+      "AzureWebAppsAnalytics": {
+        "Name": "[Concat('AzureWebAppsAnalytics', '(', parameters('workspaceName'), ')')]",
+        "GalleryName": "AzureWebAppsAnalytics"
+      }
+  
+    },
+    "resources": [
+        {
+            "name": "[parameters('workspaceName')]",
+            "type": "Microsoft.OperationalInsights/workspaces",
+            "apiVersion": "2017-04-26-preview",
+            "location": "[parameters('LogsWorkspaceLocation')]",
+            "dependsOn": [],
+            "properties": {
+              "retention": "[parameters('LogsRetentionInDays')]",
+              "sku": {
+                "name": "[parameters('LogAnalyticsSKU')]"
+              }
+            },
+            "resources": [
+              {
+                "name": "AzureActivityLog",
+                "type": "datasources",
+                "apiVersion": "2015-11-01-preview",
+                "dependsOn": [
+                    "[concat('Microsoft.OperationalInsights/workspaces/', parameters('workspaceName'))]"
+                ],
+                "kind": "AzureActivityLog",
+                "properties": {
+                    "linkedResourceId": "[concat(subscription().id, '/providers/Microsoft.Insights/eventTypes/management')]"
+                }
+            }
+            ]
+          },
+          {
+            "apiVersion": "2015-11-01-preview",
+            "location": "[parameters('LogsWorkspaceLocation')]",
+            "name": "[variables('SQLAssessment').Name]",
+            "type": "Microsoft.OperationsManagement/solutions",
+            "id": "[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', resourceGroup().name, '/providers/Microsoft.OperationsManagement/solutions/', variables('SQLAssessment').Name)]",
+            "dependsOn": [
+              "[concat('Microsoft.OperationalInsights/workspaces/', parameters('workspaceName'))]"
+            ],
+            "properties": {
+              "workspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces/', parameters('workspaceName'))]" 
+            },
+            "plan": {
+              "name": "[variables('SQLAssessment').Name]",
+              "publisher": "Microsoft",
+              "product": "[Concat('OMSGallery/', variables('SQLAssessment').GalleryName)]",
+              "promotionCode": ""
+            }
+          },
+          {
+            "apiVersion": "2015-11-01-preview",
+            "location": "[parameters('LogsWorkspaceLocation')]",
+            "name": "[variables('ApplicationInsights').Name]",
+            "type": "Microsoft.OperationsManagement/solutions",
+            "id": "[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', resourceGroup().name, '/providers/Microsoft.OperationsManagement/solutions/', variables('ApplicationInsights').Name)]",
+            "dependsOn": [
+              "[concat('Microsoft.OperationalInsights/workspaces/', parameters('workspaceName'))]"
+            ],
+            "properties": {
+              "workspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces/', parameters('workspaceName'))]" 
+            },
+            "plan": {
+              "name": "[variables('ApplicationInsights').Name]",
+              "publisher": "Microsoft",
+              "product": "[Concat('OMSGallery/', variables('ApplicationInsights').GalleryName)]",
+              "promotionCode": ""
+            },
+            "resources": [
+              
+            ]
+          },
+          {
+            "apiVersion": "2015-11-01-preview",
+            "location": "[parameters('LogsWorkspaceLocation')]",
+            "name": "[variables('KeyVaultAnalytics').Name]",
+            "type": "Microsoft.OperationsManagement/solutions",
+            "id": "[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', resourceGroup().name, '/providers/Microsoft.OperationsManagement/solutions/', variables('KeyVaultAnalytics').Name)]",
+            "dependsOn": [
+              "[concat('Microsoft.OperationalInsights/workspaces/', parameters('workspaceName'))]"
+            ],
+            "properties": {
+              "workspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces/', parameters('workspaceName'))]" 
+            },
+            "plan": {
+              "name": "[variables('KeyVaultAnalytics').Name]",
+              "publisher": "Microsoft",
+              "product": "[Concat('OMSGallery/', variables('KeyVaultAnalytics').GalleryName)]",
+              "promotionCode": ""
+            }
+          },
+          {
+            "apiVersion": "2015-11-01-preview",
+            "location": "[parameters('LogsWorkspaceLocation')]",
+            "name": "[variables('AzureSQLAnalytics').Name]",
+            "type": "Microsoft.OperationsManagement/solutions",
+            "id": "[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', resourceGroup().name, '/providers/Microsoft.OperationsManagement/solutions/', variables('AzureSQLAnalytics').Name)]",
+            "dependsOn": [
+              "[concat('Microsoft.OperationalInsights/workspaces/', parameters('workspaceName'))]"
+            ],
+            "properties": {
+              "workspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces/', parameters('workspaceName'))]" 
+            },
+            "plan": {
+              "name": "[variables('AzureSQLAnalytics').Name]",
+              "publisher": "Microsoft",
+              "product": "[Concat('OMSGallery/', variables('AzureSQLAnalytics').GalleryName)]",
+              "promotionCode": ""
+            }
+          },
+          {
+            "apiVersion": "2015-11-01-preview",
+            "location": "[parameters('LogsWorkspaceLocation')]",
+            "name": "[variables('AzureActivity').Name]",
+            "type": "Microsoft.OperationsManagement/solutions",
+            "id": "[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', resourceGroup().name, '/providers/Microsoft.OperationsManagement/solutions/', variables('AzureActivity').Name)]",
+            "dependsOn": [
+              "[concat('Microsoft.OperationalInsights/workspaces/', parameters('workspaceName'))]"
+            ],
+            "properties": {
+              "workspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces/', parameters('workspaceName'))]" 
+            },
+            "plan": {
+              "name": "[variables('AzureActivity').Name]",
+              "publisher": "Microsoft",
+              "product": "[Concat('OMSGallery/', variables('AzureActivity').GalleryName)]",
+              "promotionCode": ""
+            }
+          },
+          {
+            "apiVersion": "2015-11-01-preview",
+            "location": "[parameters('LogsWorkspaceLocation')]",
+            "name": "[variables('AzureWebAppsAnalytics').Name]",
+            "type": "Microsoft.OperationsManagement/solutions",
+            "id": "[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', resourceGroup().name, '/providers/Microsoft.OperationsManagement/solutions/', variables('AzureWebAppsAnalytics').Name)]",
+            "dependsOn": [
+              "[concat('Microsoft.OperationalInsights/workspaces/', parameters('workspaceName'))]"
+            ],
+            "properties": {
+              "workspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces/', parameters('workspaceName'))]" 
+            },
+            "plan": {
+              "name": "[variables('AzureWebAppsAnalytics').Name]",
+              "publisher": "Microsoft",
+              "product": "[Concat('OMSGallery/', variables('AzureWebAppsAnalytics').GalleryName)]",
+              "promotionCode": ""
+            }
+          }          
+    ],
+    "outputs": {
+        "workspaceId": {
+            "type": "string",
+            "value": "[resourceId('Microsoft.OperationalInsights/workspaces/', parameters('workspaceName'))]"
+        }
+    }
+}

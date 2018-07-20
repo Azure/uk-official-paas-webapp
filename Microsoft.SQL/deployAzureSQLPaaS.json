@@ -1,0 +1,433 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "baseResourceName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the resource"
+      },
+      "maxLength": 15,
+      "defaultValue": "[uniqueString(resourceGroup().id)]"
+    },
+    "databaseName": {
+        "type": "string",
+        "defaultValue": "[concat('db-', parameters('baseResourceName'))]",
+        "metadata": {
+            "description": "Name of the Database to be deployed"
+        }
+    },
+    "databaseServerName": {
+      "type": "string",
+        "defaultValue": "[concat('svr-', uniqueString(resourceGroup().id))]",
+            "metadata": {
+                "description": "Name of the Database Server to be deployed"
+            }
+    },
+    "transparentDataEncryption": {
+        "type": "string",
+        "allowedValues": [
+          "Enabled",
+          "Disabled"
+        ],
+        "defaultValue": "Enabled",
+        "metadata": {
+          "description": "Enable or disable Transparent Data Encryption (TDE) for the database."
+        }
+      },
+      "AuditRetentionPeriodInDays": {
+        "type": "int",
+        "defaultValue": 7
+      },
+    "sqlServerAdminLogin": {
+        "type": "string",
+        "metadata": {
+            "description": "The username for administering the SQL Server"
+        },
+        "defaultValue":"dbaMan"
+    },
+    "sqlServerAdminPassword": {
+        "type": "securestring",
+        "metadata": {
+            "description": "The password for administering the SQL Server"
+        },
+        "defaultValue": "[concat('L1',uniqueString(subscription().id),'#')]"
+    },
+    "sqlDatabaseEdition": {
+        "type": "string",
+        "metadata": {
+          "description": "The type of database to create."
+        },
+        "allowedValues": [
+          "Basic",
+          "Standard",
+          "Premium"
+        ],
+        "defaultValue": "Basic"
+      },
+      "sqlDatabaseCollation": {
+        "type": "string",
+        "defaultValue": "SQL_Latin1_General_CP1_CI_AS",
+        "metadata": {
+          "description": "The database collation for governing the proper use of characters."
+        }
+      },
+      "sqlDatabaseMaxSizeBytes": {
+        "type": "string",
+        "defaultValue": "1073741824",
+        "metadata": {
+          "description": "The maximum size, in bytes, for the database"
+        }
+      },
+    "useAADForSQLAdmin": {
+        "type": "string",
+        "metadata": {
+          "description": "Should the SQL Database be set to support Azure Active Directory User/Group for Administration.  If set the 'AADAdminObjectID' and 'AADLogin' parameters must be set."
+        },
+        "allowedValues": [
+          "Yes",
+          "No"
+        ],
+        "defaultValue": "No"
+    },
+    "AADAdminLogin": {
+        "type": "string",
+        "metadata": {
+            "description": "The Login ID for the Azure Active Directory user or group to be a server admin"
+        },
+        "defaultValue": "ignore"
+    },
+    "AADAdminObjectID": {
+        "type": "string",
+        "metadata": {
+            "description": "The Object ID for the Azure Active Directory user or group to be a server admin"
+        },
+        "defaultValue": "ignore"
+    },
+    "AlertWindowSizeInMinutes": {
+      "type": "string",
+      "metadata": {
+        "description": "Window size used for alerts in minutes"
+      },
+      "defaultValue": "5"
+    },
+    "AlertSendToServiceOwners": {
+      "type": "bool",
+      "metadata": {
+        "description": "Should the alerts be sent to the service owners?"
+      },
+      "defaultValue": true 
+    },
+    "AlertSendToEmailAddress": {
+      "type": "string",
+      "metadata": {
+        "description": "Custom Email Address for alerts"
+      },
+      "defaultValue": "ignore"
+    },
+    "BlockedFirewallConnectionsAlertEnabled": {
+      "type": "bool",
+      "metadata": {
+        "description": "Sets the Enabled Flag for Database alert rule for connections blocked by the firewall"
+      },
+      "defaultValue": true
+    },
+    "BlockedFirewallConnectionsThreshold": {
+      "type": "string",
+      "metadata": {
+        "description": "Number of Blocked Connections in the period to trigger the alert"
+      },
+      "defaultValue": "10"
+    },
+    "FailedConnectionsAlertEnabled": {
+      "type": "bool",
+      "metadata": {
+        "description": "Sets the Enabled Flag for Database alert rule for failed connections "
+      },
+      "defaultValue": true
+    },
+    "FailedConnectionsThreshold": {
+      "type": "string",
+      "metadata": {
+        "description": "Number of failed connections in the period to trigger the alert"
+      },
+      "defaultValue": "10"
+    },
+    "UseBYOK": {
+        "type": "bool",
+        "metadata": {
+            "description": "Should we use Bring Your Own Key for TDE, if set BYOKKeyVaultId and BYOKCertUri must be set"
+          },
+        "defaultValue": false
+    },
+    "BYOKKeyVaultId": {
+        "type": "string",
+        "metadata": {
+            "description": "The Resource Id of the Key Vault"
+          },
+        "defaultValue": "ignore" 
+    },
+  "storageAccountId": {
+      "type": "string",
+      "metadata": {
+          "description": "Resource Id for the storage account to store diagnostics"
+      }
+  },
+  "workspaceId": {
+    "type": "string",
+    "metadata": {
+        "description": "Resource Id for the Log Analytics workspace to store diagnostics"
+    }
+  }
+},
+  "variables": {
+    "AAD TenantID": "[subscription().tenantId]",
+    "arrayStorageId": "[split(parameters('storageAccountId'), '/')]",
+    "storageAccountName": "[last(variables('arrayStorageId'))]",
+    "storageEndpoint": "[concat('https://',variables('storageAccountName'),'.blob.core.windows.net')]",
+    "customEmails": "[split(parameters('AlertSendToEmailAddress'), ',')]"
+  },
+  "resources": [
+    {
+      "name": "[parameters('databaseServerName')]",
+      "type": "Microsoft.Sql/servers",
+      "apiVersion": "2015-05-01-preview",
+      "location": "[resourceGroup().location]",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "administratorLogin": "[parameters('sqlServerAdminLogin')]",
+        "administratorLoginPassword": "[parameters('sqlServerAdminPassword')]",
+        "version": "12.0"
+      },
+      "resources": [
+        {
+          "name": "[parameters('databaseName')]",
+          "type": "databases",
+          "location": "[resourceGroup().location]",
+          "apiVersion": "2014-04-01",
+          "dependsOn": [
+            "[parameters('databaseServerName')]"
+          ],
+          "properties": {
+            "edition": "[parameters('sqlDatabaseEdition')]",
+            "collation": "[parameters('sqlDatabaseCollation')]",
+            "maxSizeBytes": "[parameters('sqlDatabaseMaxSizeBytes')]"
+          },
+          "resources": [
+              {
+                "comments": "Transparent Data Encryption",
+                "name": "current",
+                "type": "transparentDataEncryption",
+                "apiVersion": "2014-04-01",
+                "properties": {
+                  "status": "[parameters('transparentDataEncryption')]"
+                },
+                "dependsOn": [
+                  "[parameters('databaseName')]"
+                ]
+              }
+            ]
+          },
+        {
+          "apiVersion": "2015-05-01-preview",
+          "type": "auditingSettings",
+          "name": "Default",
+          "location": "[resourceGroup().location]",
+          "dependsOn": [
+            "[concat('Microsoft.Sql/servers/', parameters('databaseServerName'))]"
+          ],
+          "properties": {
+            "State": "Enabled",
+            "storageEndpoint": "[variables('storageEndpoint')]",
+            "storageAccountAccessKey": "[listKeys(parameters('storageAccountId'),providers('Microsoft.Storage', 'storageAccounts').apiVersions[0]).keys[0].value]",
+            "retentionDays": "[parameters('AuditRetentionPeriodInDays')]",
+            "auditActionsAndGroups": null,
+            "storageAccountSubscriptionId": "[subscription().subscriptionId]",
+            "isStorageSecondaryKeyInUse": false
+          }
+        },
+        {
+          "apiVersion": "2015-05-01-preview",
+          "type": "securityAlertPolicies",
+          "name": "DefaultSecurityPolicies",
+          "dependsOn": [
+            "[concat('Microsoft.Sql/servers/', parameters('databaseServerName'))]",
+            "[concat('Microsoft.Sql/servers/', parameters('databaseServerName'), '/auditingSettings/Default')]"
+          ],
+          "properties": {
+              "state": "Enabled",
+              "disabledAlerts": "",
+              "emailAddresses": "[if(equals(parameters('AlertSendToEmailAddress'),'ignore'),json('null'),parameters('AlertSendToEmailAddress'))]",
+              "emailAccountAdmins": "[if(equals(string(parameters('AlertSendToServiceOwners')),'true'),'Enabled','Disabled')]",
+              "storageEndpoint": "[variables('storageEndpoint')]",
+              "storageAccountAccessKey": "[listKeys(parameters('storageAccountId'), providers('Microsoft.Storage', 'storageAccounts').apiVersions[0]).keys[0].value]",
+              "retentionDays": "[parameters('AuditRetentionPeriodInDays')]"
+          }
+        },
+        {
+            "condition": "[equals(parameters('useAADForSQLAdmin'), 'Yes')]",
+            "type": "administrators",
+            "name": "activeDirectory",
+            "apiVersion": "2014-04-01-preview",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "administratorType": "ActiveDirectory",
+                "login": "[parameters('AADAdminLogin')]",
+                "sid": "[parameters('AADAdminObjectID')]",
+                "tenantId": "[variables('AAD TenantID')]"
+            },
+            "dependsOn": [
+                "[concat('Microsoft.Sql/servers/', parameters('databaseServerName'))]"
+            ]
+        },
+        {
+          "type": "firewallrules",
+          "apiVersion": "2014-04-01-preview",
+          "dependsOn": [
+            "[parameters('databaseServerName')]"
+          ],
+          "location": "[resourceGroup().location]",
+          "name": "AllowAllWindowsAzureIps",
+          "properties": {
+            "endIpAddress": "0.0.0.0",
+            "startIpAddress": "0.0.0.0"
+          }
+        }
+      ]
+    },         
+    {
+      "name": "FirewallBlockedConnections",
+      "type": "microsoft.insights/alertrules",
+      "apiVersion": "2016-03-01",      
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[parameters('databaseName')]"
+      ],
+      "properties": {
+        "name:": "FirewallBlockedConnections",
+        "description": "Alerts on connection attempts blocked by the Firewall",
+        "isEnabled": "[parameters('BlockedFirewallConnectionsAlertEnabled')]",
+        "condition": {
+          "odata.type": "Microsoft.Azure.Management.Insights.Models.ThresholdRuleCondition",
+          "dataSource": {
+            "odata.type": "Microsoft.Azure.Management.Insights.Models.RuleMetricDataSource",
+            "resourceUri": "[resourceId('Microsoft.Sql/servers/databases', parameters('databaseServerName'), parameters('databaseName'))]",
+            "metricName": "blocked_by_firewall"
+          },
+          "operator": "GreaterThanOrEqual",
+          "threshold": "[parameters('BlockedFirewallConnectionsThreshold')]",
+          "windowSize": "[concat('PT',parameters('AlertWindowSizeInMinutes'),'M')]",
+          "timeAggregation": "Average"
+          },
+          "actions": [
+            {
+              "odata.type": "Microsoft.Azure.Management.Insights.Models.RuleEmailAction",
+              "sendToServiceOwners": "[parameters('AlertSendToServiceOwners')]",
+              "customEmails": "[if(empty(variables('customEmails')),json('null'),variables('customEmails'))]"
+            }
+          ]
+        },
+        "resources": []
+      },
+      {
+        "type": "Microsoft.Insights/alertRules",
+        "name": "FailedDatabaseConnections",
+        "dependsOn": [
+          "[parameters('databaseName')]"
+        ],
+        "location": "[resourceGroup().location]",
+        "apiVersion": "2014-04-01",
+        "properties": {
+          "name:": "FailedDatabaseConnections",
+          "description": "Alerts on failed connection attempts",
+          "isEnabled": "[parameters('FailedConnectionsAlertEnabled')]",
+          "condition": {
+            "odata.type": "Microsoft.Azure.Management.Insights.Models.ThresholdRuleCondition",
+                "dataSource": {
+                    "odata.type": "Microsoft.Azure.Management.Insights.Models.RuleMetricDataSource",
+                    "resourceUri": "[resourceId('Microsoft.Sql/servers/databases', parameters('databaseServerName'), parameters('databaseName'))]",
+                    "metricName": "connection_failed"
+                },
+                "operator": "GreaterThan",
+                "threshold": "[parameters('FailedConnectionsThreshold')]",
+                "windowSize": "[concat('PT',parameters('AlertWindowSizeInMinutes'),'M')]"
+            },
+            "actions": [
+              {
+                "odata.type": "Microsoft.Azure.Management.Insights.Models.RuleEmailAction",
+                "sendToServiceOwners": "[parameters('AlertSendToServiceOwners')]",
+                "customEmails": "[if(empty(variables('customEmails')),json('null'),variables('customEmails'))]"
+              }
+            ]
+      }
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases/providers/diagnosticSettings",
+      "name": "[concat(parameters('databaseServerName'),'/', parameters('databaseName'),'/Microsoft.Insights/SQLLogAnalyticsIntegration')]",
+      "apiVersion": "2017-05-01-preview",
+      "dependsOn": [
+        "[parameters('databaseServerName')]",
+        "[parameters('databaseName')]"
+      ],
+      "properties": {
+        "name": "SQLLogAnalyticsIntegration",
+			  "workspaceId": "[parameters('workspaceId')]",
+        "logs": [
+        {
+          "category": "Errors",
+          "enabled": true,
+          "retentionPolicy": {
+            "days": 7,
+            "enabled": false
+          }
+        },
+        {
+          "category": "Audit",
+          "enabled": true,
+          "retentionPolicy": {
+            "days": 90,
+            "enabled": false
+          }
+        },
+        {
+          "category": "SQLSecurityAuditEvents",
+          "enabled": true,
+          "retentionPolicy": {
+            "days": 90,
+            "enabled": false
+          }
+        }
+        ],
+        "metrics": [
+        {
+          "category": "AllMetrics",
+          "enabled": true,
+          "retentionPolicy": {
+            "enabled": false,
+            "days": 7
+          }
+        }
+        ]
+      }
+    }
+    ],
+    "outputs": {
+      "azureSQLPaaSMSITenantId": {
+        "type":"string",
+        "value": "[reference(concat('Microsoft.Sql/servers/', parameters('databaseServerName')), '2015-05-01-preview', 'Full').identity.tenantId]"
+      },
+      "azureSQLPaaSMSIObjectId": {
+        "type":"string",
+        "value": "[reference(concat('Microsoft.Sql/servers/', parameters('databaseServerName')), '2015-05-01-preview', 'Full').identity.principalId]"
+      },
+      "azureSQLFQDN": {
+        "type":"string",
+        "value": "[reference(concat('Microsoft.Sql/servers/', parameters('databaseServerName'))).fullyQualifiedDomainName]"
+      }
+    }
+  }
+  
+
+

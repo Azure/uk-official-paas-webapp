@@ -1,0 +1,121 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "baseResourceName": {
+            "type": "string",
+            "metadata": {
+            "description": "Name of the resource"
+            },
+            "maxLength": 15,
+            "defaultValue": "[uniqueString(resourceGroup().id)]"
+        },
+        "storageAccountId": {
+            "type": "string",
+            "metadata": {
+                "description": "Resource Id for the storage account to store diagnostics"
+            },
+            "defaultValue": "[json('null')]"
+        },
+        "workspaceId": {
+            "type": "string",
+            "metadata": {
+                "description": "Resource Id for the Log Analytics workspace to store diagnostics"
+            },
+            "defaultValue": "[json('null')]"
+        },
+        "LogsRetentionInDays": {
+            "type": "int",
+            "metadata": {
+                "description": "Number of days to retain logs"
+            },
+            "defaultValue": 7
+        },
+        "accessPolicies": {
+            "type": "array",
+            "metadata": {
+                "description": "Array of Access Policies to apply to the vault"
+            },
+            "defaultValue": []
+        },
+        "secretsAndKeys": {
+            "type": "array",
+            "metadata": {
+                "description": "Array of Secrets & Keys to apply to the vault"
+            },
+            "defaultValue": []
+        },
+        "vaultNameSuffix": {
+            "type": "string",
+            "metadata": {
+                "description": "Suffix to apply to the name of the Key Vault"
+            },
+            "defaultValue": "vault"
+        }
+    },
+    "variables": {
+        "tenantId": "[subscription().tenantId]",
+        "vaultName": "[concat('kv',parameters('baseResourceName'), parameters('vaultNameSuffix'))]"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.KeyVault/vaults",
+            "name": "[variables('vaultName')]",
+            "apiVersion": "2015-06-01",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "tenantId": "[variables('tenantId')]",
+                "sku": {
+                    "family": "A",
+                    "name": "Standard"
+                },
+                "accessPolicies": "[parameters('accessPolicies')]",
+                "resources": [
+                    {   
+                        "copy": [
+                            {
+                                "name": "deployKeyVaultChildResources",
+                                "count": "[length(parameters('secretsAndKeys'))]",
+                                "input": {
+                                    "type": "[parameters('secretsAndKeys')[copyIndex('deployKeyVaultChildResources')].type]",
+                                    "name": "[parameters('secretsAndKeys')[copyIndex('deployKeyVaultChildResources')].name]",
+                                    "apiVersion": "[parameters('secretsAndKeys')[copyIndex('deployKeyVaultChildResources')].apiVersion]",
+                                    "properties": "[parameters('secretsAndKeys')[copyIndex('deployKeyVaultChildResources')].properties]"
+                                }
+                            }
+                        ]
+                    },
+                    {  
+                        "type":"Microsoft.KeyVault/vaults/providers/diagnosticsettings",
+                        "name":"[concat(variables('vaultName'), '/Microsoft.Insights/service')]",
+                        "apiVersion":"2016-09-01",
+                        "location":"[resourceGroup().location]",
+                        "dependsOn":[  
+                            "[concat('Microsoft.KeyVault/vaults/', variables('vaultName'))]"
+                          ],
+                        "properties":{  
+                          "storageAccountId":"[parameters('storageAccountId')]",
+                          "workspaceId":"[parameters('workspaceId')]",
+                          "logs":[  
+                            {  
+                              "category":"AuditEvent",
+                              "enabled":true,
+                              "retentionPolicy":{  
+                                "enabled":true,
+                                "days":"[parameters('LogsRetentionInDays')]"
+                              }
+                            }
+                          ]
+                        }
+                      }        
+                ]
+            } 
+        }      
+    ],
+    "outputs": {
+        "keyVaultId": {
+            "type": "string",
+            "value": "[resourceId('Microsoft.KeyVault/vaults',variables('vaultName'))]"
+        }
+    }
+}
