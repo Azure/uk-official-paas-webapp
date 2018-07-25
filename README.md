@@ -1,13 +1,13 @@
 # Solution Overview
-For more information about this solution, see [Azure Security and Compliance Blueprint - UK-OFFICAL Three-Tier Web Applications using Platform as a Service](https://aka.ms/ukofficial-paaswa).
+For more information about this solution, see [Azure Security and Compliance Blueprint - PaaS Web Application Hosting for UK OFFICIAL Workloads](https://aka.ms/ukofficial-paaswa).
 
-For deployment this blueprint uses linked ARM Templates.  There are a series of individual templates for each component that can be used to deploy each component indivudually, each of these templates have their own series of paramters and defaults.  In the root folder we have azuredeploy.json, this exposes a subset of parameters which has been derived to enable a simple deployment.  More advanced configurations can be achived via customising the templates.
+For deployment this blueprint uses linked Azure Resource Manager templates. There are a series of individual templates for each component that can be used to deploy each component indivudually; each of these templates have their own series of paramters and defaults. In the root folder, azuredeploy.json exposes a subset of parameters which has been derived to enable a simple deployment.  More advanced configurations can be achived via customising the templates.
 
 # Deploy the Solution
 
-These templates will deploy a web application hosting architecture using Azure Platform as a Service components. Progress can be monitored from the Resource Group blade and Deployment output blade in the Azure Portal.
+These templates will deploy a web application hosting architecture using Azure platform as a service components. Progress can be monitored from the Resource Group blade and Deployment output blade in the Azure Portal.
 
-There are two methods that deployment users may use to deploy this solution. The first method uses a Bash script, whereas the second method utilises Azure Portal to deploy the solution. These two methods are detailed in the sections below.
+There are two methods that users may use to deploy this solution. The first method uses a Bash script, whereas the second method utilises Azure Portal to deploy the solution. These two methods are detailed in the sections below.
 
  As a pre-requisite to deployment, users should ensure that they have:
 
@@ -16,7 +16,7 @@ There are two methods that deployment users may use to deploy this solution. The
 
 > If you would like to configure an Azure Active Directory Group as part of the scripted deployment you will need to have suitable permissions within your Azure Active Directory.
 
-Other Azure architectural best practices and guidance can be found in [Azure Reference Architectures](https://docs.microsoft.com/azure/guidance/guidance-architecture). Supporting Microsoft Visio templates are available from the [Microsoft download center](http://download.microsoft.com/download/1/5/6/1569703C-0A82-4A9C-8334-F13D0DF2F472/RAs.vsdx) with the corresponding ARM Templates found at [Azure Reference Architectures ARM Templates](https://github.com/mspnp/reference-architectures).
+Other Azure architectural best practices and guidance can be found in [Azure Reference Architectures](https://docs.microsoft.com/azure/guidance/guidance-architecture). Supporting Microsoft Visio templates are available from the [Microsoft download center](http://download.microsoft.com/download/1/5/6/1569703C-0A82-4A9C-8334-F13D0DF2F472/RAs.vsdx) with the corresponding ARM templates found at [Azure Reference Architectures ARM Templates](https://github.com/mspnp/reference-architectures).
 
 ## Method 1: Azure CLI 2 (Express version)
 To deploy this solution through the Azure CLI, you will need the latest version of the [Azure CLI 2](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest) to use the BASH script that deploys the solution. Alternatively you can use the [Azure Cloud Shell](https://shell.azure.com/). To deploy the reference architecture, follow these steps:
@@ -38,7 +38,7 @@ The ```pre_reqs.sh``` script supports a number of command line arguments that al
 4. SQL Admin configuration - valid options are ```Group```, ```User```, ```None```
 5. Log Analytics SKU - valid options are ```Free``` or ```pergb2018```
 
->As the arguments are positional rather than named, you need to add them in the correct order.  If you specify arguments you don't have to specify all of them, for example you could provide just the first argument, or arguments 1,2 & 3.  You cannot supply them out of order.
+>As the arguments are positional rather than named, you need to add them in the correct order.  If you specify arguments, you don't have to specify all of them. For example, you could provide just the first argument, or arguments 1,2 & 3. You cannot supply them out of order.
 
 ```bash pre_reqs.sh northeurope paasbp rg-ne-paas-blueprint```
 
