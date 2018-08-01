@@ -135,7 +135,7 @@
     }
   ],
   "variables": {
-    "templateBaseUrl": "https://raw.githubusercontent.com/ianalderman/ukopaas/master/",
+    "templateBaseUrl": "https://raw.githubusercontent.com/Azure/uk-official-three-tier-paas-webapp/master/",
     "appServiceTemplateUrl": "[concat(variables('templateBaseUrl'), 'Microsoft.Web/deployAppService.json')]",
     "storageAccountTemplateUrl": "[concat(variables('templateBaseUrl'), 'Microsoft.Storage/deployStorageAccount.json')]",
     "azureSQLTemplateUrl": "[concat(variables('templateBaseUrl'), 'Microsoft.SQL/deployAzureSQLPaaS.json')]",
