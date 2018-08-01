@@ -114,6 +114,16 @@ if [[ $regions != *"$regionToDeployTo"* ]] || [[ ${#regionToDeployTo} -lt 6 ]]; 
     exit 1
 fi
 
+echo -n "Please enter a password for administering the deployed SQL Server, this should be at least 8 chars long and a mix of alhpanumeric and case:"
+read -s sqlPassword
+
+if [[ ${#sqlPassword} -ge 8 && "$sqlPassword" == *[[:lower:]]* && "$sqlPassword" == *[[:upper:]]* && "$sqlPassword" == *[0-9]* ]]; then
+    echo "Password OK"
+else   
+    echo "Password does not meet complexity requirements (>= 8 chars, mixed case and a number) please see https://docs.microsoft.com/en-us/sql/relational-databases/security/strong-passwords?view=sql-server-2017 for more details."
+    exit
+fi
+
 #Create deployment resource groups
 echo "Creating resource groups"
 baseResourceGroup=$(az group create -l $regionToDeployTo -n $rgBaseName)
@@ -144,11 +154,11 @@ if [ $useAADGroup == "Group" ]; then
     groupName="PaaSBlueprintSQLAdministrators"
     
     aadGroupId=$(az ad group create --display-name "$groupName" --mail-nickname "$groupMail" | jq ".objectId" -r)
-    paramString="baseResourceName=$baseName appServiceResourceGroup=$rgBaseName-appService keyVaultResourceGroup=$rgBaseName-keyVault storageResourceGroup=$rgBaseName-storage azureSQLResourceGroup=$rgBaseName-azureSQL useAADForSQLAdmin=$useAADForSQLAdmin AADAdminLogin=$groupName AADAdminObjectID=$aadGroupId AlertSendToEmailAddress=$aadUserMail LogAnalyticsSKU=$logAnalyticsSKU"
+    paramString="baseResourceName=$baseName appServiceResourceGroup=$rgBaseName-appService keyVaultResourceGroup=$rgBaseName-keyVault storageResourceGroup=$rgBaseName-storage azureSQLResourceGroup=$rgBaseName-azureSQL useAADForSQLAdmin=$useAADForSQLAdmin AADAdminLogin=$groupName AADAdminObjectID=$aadGroupId AlertSendToEmailAddress=$aadUserMail LogAnalyticsSKU=$logAnalyticsSKU sqlServerAdminPassword=$sqlPassword"
     echo "Assigning logged in user to SQL Administrators Group"
     addUser=$(az ad group member add -g $aadGroupId --member-id $aadUserId)
 else
-    paramString="baseResourceName=$baseName appServiceResourceGroup=$rgBaseName-appService keyVaultResourceGroup=$rgBaseName-keyVault storageResourceGroup=$rgBaseName-storage azureSQLResourceGroup=$rgBaseName-azureSQL useAADForSQLAdmin=$useAADForSQLAdmin AADAdminLogin=$upn AADAdminObjectID=$aadUserId AlertSendToEmailAddress=$aadUserMail LogAnalyticsSKU=$logAnalyticsSKU"
+    paramString="baseResourceName=$baseName appServiceResourceGroup=$rgBaseName-appService keyVaultResourceGroup=$rgBaseName-keyVault storageResourceGroup=$rgBaseName-storage azureSQLResourceGroup=$rgBaseName-azureSQL useAADForSQLAdmin=$useAADForSQLAdmin AADAdminLogin=$upn AADAdminObjectID=$aadUserId AlertSendToEmailAddress=$aadUserMail LogAnalyticsSKU=$logAnalyticsSKU sqlServerAdminPassword=$sqlPassword"
 fi
 
 #Run the deployment
