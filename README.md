@@ -26,7 +26,6 @@ To deploy this solution through the Azure CLI, you will need the latest version 
 4. If you do not know the short name of the region you wish to deploy to enter ```Y``` else enter ```N```
 5. Enter the short name of the region you wish to deploy to e.g. ```northeurope```
 
-> Note: The parameter files include hard-coded passwords in various places. It is strongly recommended that you change these values.
 > If the parameters files are not updated, the default values will be used which may not be compatible with your on-premises environment.
 
 ### Method 1a: Azure CLI 2 (Configuring the deployment via script arguments)
