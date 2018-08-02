@@ -21,7 +21,7 @@ Other Azure architectural best practices and guidance can be found in [Azure Ref
 ## Method 1: Azure CLI 2 (Express version)
 To deploy this solution through the Azure CLI, you will need the latest version of the [Azure CLI 2](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest) to use the BASH script that deploys the solution. Alternatively you can use the [Azure Cloud Shell](https://shell.azure.com/). To deploy the reference architecture, follow these steps:
 1. If you have access to multiple subscriptions use the command ```az account set --subscription <the subscription id you wish to use>``` to ensure you are targetting the correct subscription
-2. Download the BASH script pre_reqs.sh, for example with the command ```wget https://raw.githubusercontent.com/Azure/uk-official-three-tier-paas-webapp/master/scripts/pre_reqs.sh```
+2. Download the BASH script pre_reqs.sh, for example with the command ```wget https://raw.githubusercontent.com/Azure/uk-official-paas-webapp/master/scripts/pre_reqs.sh```
 3. Execute the script by using the command ```bash pre_reqs.sh```
 4. If you do not know the short name of the region you wish to deploy to enter ```Y``` else enter ```N```
 5. Enter the short name of the region you wish to deploy to e.g. ```northeurope```
@@ -46,7 +46,7 @@ The ```pre_reqs.sh``` script supports a number of command line arguments that al
 A deployment for this reference architecture is available on
 [GitHub](https://aka.ms/ukofficial-paaswa-repo). The templates can be cloned or downloaded if customisation of parameters is requried.  To deploy the architecture, follow the steps below.
 
-<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2Fuk-official-three-tier-paas-webapp%2Fmaster%2Fazuredeploy.json" target="_blank">
+<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2Fuk-official-paas-webapp%2Fmaster%2Fazuredeploy.json" target="_blank">
 <img src="https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/deploytoazure.png"/>
 </a>
 

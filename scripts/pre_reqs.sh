@@ -164,7 +164,7 @@ fi
 #Run the deployment
 echo "Starting deployment..."
 
-deploymentOutput=$(az group deployment create -g $rgBaseName --template-uri https://raw.githubusercontent.com/Azure/uk-official-three-tier-paas-webapp/master/azuredeploy.json --parameters $paramString)
+deploymentOutput=$(az group deployment create -g $rgBaseName --template-uri https://raw.githubusercontent.com/Azure/uk-official-paas-webapp/master/azuredeploy.json --parameters $paramString)
 
 echo "Deployment completed..."
 
