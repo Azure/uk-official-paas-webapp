@@ -1,6 +1,5 @@
 {
   "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
-  "name": "pid-8286eaf5-74c6-4ddc-85cb-51f67af6a795",
   "contentVersion": "1.0.0.0",
   "parameters": {
     "baseResourceName": {
@@ -78,9 +77,8 @@
     "sqlServerAdminPassword": {
       "type": "securestring",
       "metadata": {
-        "description": "The password for administering the SQL Server"
-      },
-      "defaultValue": "[concat('L1',uniqueString(subscription().id),'#')]"
+        "description": "The password for administering the SQL Server, this should be at least 8 characters and a mix of case and numerics - please see https://docs.microsoft.com/en-us/sql/relational-databases/security/strong-passwords?view=sql-server-2017 for more details."
+      }
     },
     "useAADForSQLAdmin": {
       "type": "string",
@@ -143,7 +141,21 @@
     "logAnalyticsTemplateUrl": "[concat(variables('templateBaseUrl'), 'Microsoft.OperationalInsights/deployLogAnalytics.json')]",
     "storageAccountBaseName": "[uniqueString(resourceGroup().id)]"
   },
-  "resources": [{
+  "resources": [
+    {
+      "apiVersion": "2017-05-10",
+      "name": "pid-8286eaf5-74c6-4ddc-85cb-51f67af6a795",
+      "type": "Microsoft.Resources/deployments",
+      "properties": {
+        "mode": "Incremental",
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "resources": []
+        }
+      }
+    },    
+    {
       "apiVersion": "2017-05-10",
       "name": "deployLogAnalyticsWorkspace",
       "type": "Microsoft.Resources/deployments",
