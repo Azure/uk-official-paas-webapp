@@ -73,7 +73,7 @@ The table below provides additional information about deployment parameters.
   LogsWorkspaceLocation|westeurope|Which Azure Region to deploy the Log Analytics workspace to
   LogAnalyticsSKU|N/A|The SKU for provisioning the Log Analytics solution.  Note if your subscription has been moved to the "new" pricing only "pergb2018" will work, if not it is "Free"
   databaseServerName|concat('svr-', uniqueString(resourceGroup().id))|Name of the database server to deploy
-  sqlServerAdminPassword|concat('L1',uniqueString(subscription().id),'#')|The default password for the SQL Admin user
+  sqlServerAdminPassword|N/A|The password for administering the SQL Server, this should be at least 8 characters and a mix of case and numerics - please see [Strong Passwords](https://docs.microsoft.com/en-us/sql/relational-databases/security/strong-passwords?view=sql-server-2017) for more details.
   useAADForSQLAdmin|No|Allowed Values "Yes", "No".  Sets whether Azure Active Directory will be used for SQL Server Administration
   AADAdminLogin|ignore|The Login ID for the Azure Active Directory user or group to be Server Admin, e.g., sg_azure_sql_dbo@contoso.com
   AADAdminObjectID|ignore|The underlying ObjectID (in the form of a GUID) representing the assigned Azure Active Directory user / group
