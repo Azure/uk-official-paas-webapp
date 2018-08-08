@@ -1,7 +1,7 @@
 # Solution Overview
 For more information about this solution, see [Azure Security and Compliance Blueprint - PaaS Web Application Hosting for UK OFFICIAL Workloads](https://aka.ms/ukofficial-paaswa).
 
-For deployment this blueprint uses linked Azure Resource Manager templates. There are a series of individual templates for each component that can be used to deploy each component indivudually; each of these templates have their own series of paramters and defaults. In the root folder, azuredeploy.json exposes a subset of parameters which has been derived to enable a simple deployment.  More advanced configurations can be achived via customising the templates.
+For deployment this blueprint uses linked Azure Resource Manager templates. There are a series of individual templates for each component that can be used to deploy each component individually; each of these templates have their own series of parameters and defaults. In the root folder, azuredeploy.json exposes a subset of parameters which have been derived to enable a simple deployment.  More advanced configurations can be achieved via customising the templates.
 
 # Deploy the Solution
 
